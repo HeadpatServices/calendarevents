@@ -3,9 +3,7 @@ package me.nikl.calendarevents;
 import com.google.common.base.Charsets;
 import me.nikl.calendarevents.external.PlaceholderHook;
 import me.nikl.calendarevents.scheduling.Timer;
-import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -17,7 +15,7 @@ import java.io.InputStreamReader;
 
 /**
  * @author Niklas Eicker
- *
+ * <p>
  * Plugin class
  */
 public class CalendarEvents extends JavaPlugin {
@@ -26,8 +24,8 @@ public class CalendarEvents extends JavaPlugin {
     private EventsManager eventsManager;
     private File configurationFile;
     private FileConfiguration configuration;
-    private Metrics metrics;
     private PlaceholderHook placeholderHook;
+    public static CalendarEvents instance;
 
     public static void debug(String message) {
         if (DEBUG) Bukkit.getLogger().info(message);
@@ -43,19 +41,11 @@ public class CalendarEvents extends JavaPlugin {
         this.eventsManager = new EventsManager(this);
         this.timer = new Timer(this);
         this.getCommand("calendarevents").setExecutor(new Commands(this));
-        setUpMetrics();
     }
 
-    private void setUpMetrics() {
-
-        // send data with bStats if not opt out
-        if (!configuration.getBoolean("bstats.disabled", false)) {
-            metrics = new Metrics(this);
-            metrics.addCustomChart(new Metrics.SimplePie("number_of_events"
-                    , () -> String.valueOf(eventsManager.getNumberOfEvents())));
-        } else {
-            Bukkit.getConsoleSender().sendMessage("[" + ChatColor.DARK_AQUA + "CalendarEvents" + ChatColor.RESET + "]" + " You have opt out bStats... That's sad!");
-        }
+    @Override
+    public void onLoad() {
+        instance = this;
     }
 
     @Override
