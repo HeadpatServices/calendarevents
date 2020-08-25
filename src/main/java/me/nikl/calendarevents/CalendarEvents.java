@@ -41,6 +41,9 @@ public class CalendarEvents extends JavaPlugin {
         this.eventsManager = new EventsManager(this);
         this.timer = new Timer(this);
         this.getCommand("calendarevents").setExecutor(new Commands(this));
+        EventCommand command = new EventCommand(this);
+        this.getCommand("events").setExecutor(command);
+        this.getCommand("events").setTabCompleter(command);
     }
 
     @Override

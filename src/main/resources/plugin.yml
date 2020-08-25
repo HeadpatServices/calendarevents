@@ -12,6 +12,11 @@ commands:
     description: main command
     usage: /calendarevents
     aliases: [ce]
+  events:
+    description: list of events
+    usage: /events
+    aliases: calendar
+    permission: calendarevents.list
 
 permissions:
   calendarevents.reload:
