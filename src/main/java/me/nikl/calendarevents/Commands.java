@@ -5,9 +5,8 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
-import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
+import java.util.LinkedHashMap;
 
 /**
  * @author Niklas Eicker, Headpat Services
@@ -48,17 +47,8 @@ public class Commands implements CommandExecutor {
                     if (!checkPermission(sender, args[0].toLowerCase())) {
                         return true;
                     }
-                    Map<String, Long> nextCalls = this.plugin.getApi().getNextCallsOfEvents();
-                    sender.sendMessage("§7§m---------------------§r §bEvents§r §7§m------------------------");
-                    nextCalls.forEach((String event, Long millis) -> {
-                        Duration dur = Duration.between(Instant.ofEpochMilli(millis), Instant.now());
-                        dur = dur.abs();
-                        ChatColor color = ChatColor.valueOf(CalendarEvents.instance.getConfig().getString("events." + event + ".color", "GOLD"));
-                        String str = CalendarEvents.instance.getConfig().getString("events." + event + ".placehldr", "%event% in %time%");
-                        assert str != null;
-                        sender.sendMessage(color + "§l" + str.replace("%event%", Utils.separateByCasing(event)).replace("%time%", Utils.getTimeUntil(dur)));
-                    });
-                    sender.sendMessage("§7§m----------------------------------------------------");
+                    LinkedHashMap<String, Instant> nextCalls = Utils.convertAndSortByValue(this.plugin.getApi().getNextCallsOfEvents());
+                    Utils.constructEventsList(sender, nextCalls);
                     return true;
             }
         }
