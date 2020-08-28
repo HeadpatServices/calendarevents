@@ -1,7 +1,7 @@
 package me.nikl.calendarevents;
 
-import me.nikl.nmsutilities.NmsUtility;
 import me.nikl.nmsutilities.NmsFactory;
+import me.nikl.nmsutilities.NmsUtility;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -11,12 +11,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
+import java.util.regex.Pattern;
 
 /**
  * @author Niklas Eicker
@@ -117,38 +114,52 @@ public class EventListener implements Listener {
         }
     }
 
+    private static final Pattern PATTERN = Pattern.compile("delay /[0-9]+/");
+
     @EventHandler
     public void onCalendarEvent(CalendarEvent event) {
         CalendarEvents.debug("[Listener] event called: " + event.getLabels().toString());
         CalendarEvents.debug("[Listener] called at: " + event.getTime());
         // go through all labels in the listener section
         for (String label : event.getLabels()) {
-
             // check for commands on the event
             if (commands.get(label) != null && !commands.get(label).isEmpty()) {
-                for (String cmd : commands.get(label)) {
-                    cmd = setEventPlaceholders(cmd, event);
-                    if (cmd.contains("%allOnline%")) {
-                        for (Player player : Bukkit.getOnlinePlayers()) {
-                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), placeholders(player, cmd.replaceAll("%allOnline%", player.getName()).replaceAll("%player%", player.getName())));
-                        }
-                    } else if (cmd.contains("%allOffline%")) {
-                        for (OfflinePlayer player : Bukkit.getOfflinePlayers()) {
-                            if (!player.hasPlayedBefore() || player.isOnline()) {
-                                continue;
-                            }
-                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), placeholders(null, cmd.replaceAll("%allOffline%", player.getName()).replaceAll("%player%", player.getName())));
-                        }
-                    } else if (cmd.contains("%allPlayers%")) {
-                        for (OfflinePlayer player : Bukkit.getOfflinePlayers()) {
-                            if (!player.hasPlayedBefore()) {
-                                continue;
-                            }
-                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), placeholders(null, cmd.replaceAll("%allPlayers%", player.getName()).replaceAll("%player%", player.getName())));
-                        }
-                    } else {
-                        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), placeholders(null, cmd));
+                ArrayList<String> get = commands.get(label);
+                for (int i = 0; i < get.size(); i++) {
+                    String cmd = get.get(i);
+                    int delay = 0;
+                    if (PATTERN.matcher(cmd).matches()) {
+                        delay = Integer.parseInt(cmd.substring(6));
+                        i++;
+                        if (i >= commands.size())
+                            return;
                     }
+                    int finalI = i;
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        String command = get.get(finalI);
+                        command = setEventPlaceholders(command, event);
+                        if (command.contains("%allOnline%")) {
+                            for (Player player : Bukkit.getOnlinePlayers()) {
+                                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), placeholders(player, command.replaceAll("%allOnline%", player.getName()).replaceAll("%player%", player.getName())));
+                            }
+                        } else if (command.contains("%allOffline%")) {
+                            for (OfflinePlayer player : Bukkit.getOfflinePlayers()) {
+                                if (!player.hasPlayedBefore() || player.isOnline()) {
+                                    continue;
+                                }
+                                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), placeholders(null, command.replaceAll("%allOffline%", player.getName()).replaceAll("%player%", player.getName())));
+                            }
+                        } else if (command.contains("%allPlayers%")) {
+                            for (OfflinePlayer player : Bukkit.getOfflinePlayers()) {
+                                if (!player.hasPlayedBefore()) {
+                                    continue;
+                                }
+                                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), placeholders(null, command.replaceAll("%allPlayers%", player.getName()).replaceAll("%player%", player.getName())));
+                            }
+                        } else {
+                            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), placeholders(null, command));
+                        }
+                    }, delay);
                 }
             }
 
