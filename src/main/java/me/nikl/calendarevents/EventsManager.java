@@ -10,21 +10,16 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.ListIterator;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 /**
  * @author Niklas Eicker
- *
+ * <p>
  * load events from config file
  * keeps set of labels
- *
+ * <p>
  * Events are called by this class
  */
 public class EventsManager implements CalendarEventsApi {
@@ -57,7 +52,7 @@ public class EventsManager implements CalendarEventsApi {
                 CalendarEvents.debug("***********************************************************************************");
                 continue;
             }
-            if(events.isList(key + ".events")) {
+            if (events.isList(key + ".events")) {
                 this.combinedEvents.put(key, new CombinedEvent(key, events.getStringList(key + ".events")));
                 continue;
             }
@@ -95,7 +90,7 @@ public class EventsManager implements CalendarEventsApi {
         while (iterator.hasNext()) {
             CombinedEvent event = iterator.next();
             for (String childEvent : event.getChildEvents()) {
-                if(!this.timings.containsKey(childEvent)) {
+                if (!this.timings.containsKey(childEvent)) {
                     iterator.remove();
                     Bukkit.getLogger().log(Level.WARNING, "The combined event '" + event.getLable() + "'");
                     Bukkit.getLogger().log(Level.WARNING, "   contains unknown child event: ''" + childEvent + "'");
@@ -384,7 +379,7 @@ public class EventsManager implements CalendarEventsApi {
                     public void run() {
                         for (String label : labels) {
                             // we only have to update timings (not combined events)
-                            if(!timings.containsKey(label)) continue;
+                            if (!timings.containsKey(label)) continue;
                             Timing timing = timings.get(label);
                             timing.setNextMilli();
                         }
@@ -437,7 +432,7 @@ public class EventsManager implements CalendarEventsApi {
 
     @Override
     public boolean addEvent(String label, String occasions, String timings) {
-        if (this.timings.keySet().contains(label)) {
+        if (this.timings.containsKey(label)) {
             return false;
         }
         Timing timing = new Timing(label, this);
@@ -482,23 +477,15 @@ public class EventsManager implements CalendarEventsApi {
 
     @Override
     public Map<String, Long> getNextCallsOfEvents() {
-        Map<String, Long> nextCalls = new HashMap<>();
-        this.timings.forEach((String label, Timing timing) -> nextCalls.put(label, timing.getNextCall()));
+        return this.timings.entrySet().stream().filter(e -> !plugin.getConfig().getBoolean("events." + e.getKey() + ".hidden", false)).collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getNextCall()));
         // ToDo: support combined events here
-        //this.combinedEvents.forEach((String label, CombinedEvent combinedEvent) -> nextCalls.put(label, combinedEvent.getNextCall()));
-        return nextCalls;
     }
 
     public int getNumberOfEvents() {
-        return timings.keySet().size();
+        return timings.size();
     }
 
     private Map<String, Timing> getAllApiRegisteredTimings() {
-        HashMap<String, Timing> toReturn = new HashMap<>();
-        for (String label : timings.keySet()) {
-            if (config.isConfigurationSection("events." + label)) continue;
-            toReturn.put(label, timings.get(label));
-        }
-        return toReturn;
+        return this.timings.entrySet().stream().filter(stringTimingEntry -> !config.isConfigurationSection("events." + stringTimingEntry.getKey())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

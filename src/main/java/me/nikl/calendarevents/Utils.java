@@ -16,7 +16,7 @@ public class Utils {
         if (duration.toDays() > 1)
             return duration.toDays() + " days";
         else if (duration.toHours() > 1)
-            return duration.toDays() + " hours";
+            return duration.toHours() + " hours";
         else
             return duration.toMinutes() + " minutes";
     }
